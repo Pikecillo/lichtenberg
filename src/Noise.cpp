@@ -1,120 +1,71 @@
+/*======================================================================
+
+ Copyright (C) 2010-2015. Mario Rincon-Nigro.
+
+ This is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This software is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+======================================================================*/
+
 #include <math.h>
 #include <stdlib.h>
 
 #include <Noise.h>
 
-Noise::Noise() {
-    m_grad[0] = Vec3f(1.0, 1.0, 0.0);
-    m_grad[1] = Vec3f(-1.0, 1.0, 0.0);
-    m_grad[2] = Vec3f(1.0,-1.0, 0.0);
-    m_grad[3] = Vec3f(-1.0,-1.0, 0.0);
-    
-    m_grad[4] = Vec3f(1.0, 0.0, 1.0);
-    m_grad[5] = Vec3f(-1.0, 0.0, 1.0);
-    m_grad[6] = Vec3f(1.0, 0.0,-1.0);
-    m_grad[7] = Vec3f(-1.0, 0.0,-1.0);
-    
-    m_grad[8] = Vec3f(0.0, 1.0, 1.0);
-    m_grad[9] = Vec3f(0.0,-1.0, 1.0);
-    m_grad[10] = Vec3f(0.0, 1.0,-1.0);
-    m_grad[11] = Vec3f(0.0,-1.0,-1.0);
-    
-    m_grad[12] = Vec3f(1.0, 1.0, 0.0);
-    m_grad[13] = Vec3f(-1.0, 1.0, 0.0);
-    m_grad[14] = Vec3f(0.0,-1.0, 1.0);
-    m_grad[15] = Vec3f(0.0,-1.0,-1.0);
-    
-    for(int i = 0; i < 16; i++)
-	m_phi[i] = i;
-    
-    // Shuffle phi
-    for(int i = 14; i >= 0; i--){
-	int target = rand() % (i + 1);
-	int temp = m_phi[i + 1];
+const float Noise::m_grad[][3] = {
+    {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0,-1.0, 0.0}, {-1.0,-1.0, 0.0},
+    {1.0, 0.0, 1.0}, {-1.0, 0.0, 1.0}, {1.0, 0.0,-1.0}, {-1.0, 0.0,-1.0},
+    {0.0, 1.0, 1.0}, { 0.0,-1.0, 1.0}, {0.0, 1.0,-1.0}, { 0.0,-1.0,-1.0}
+};
 
-	m_phi[i + 1] = m_phi[target];
-	m_phi[target] = temp;
-    }
+const int Noise::m_perm[] = {
+    10, 5, 6, 7, 9, 8, 1, 0, 4, 2, 3, 11
+};
+
+float Noise::dotGrad(int g, float u, float v, float w) {
+    return m_grad[g][0] * u + m_grad[g][1] * v + m_grad[g][2] * w;
 }
 
-float Noise::turbulence(const Vec3f &p, int depth) const {
-    float sum = 0.0f;
-    float weight = 1.0f;
-    Vec3f ptemp(p);
-    
-    sum = fabs(noise(ptemp));
-    
-    for(int i = 1; i < depth; i++){
-	weight = weight * 2;
-	
-	ptemp[0] = p.x() * weight;
-	ptemp[1] = p.y() * weight;
-	ptemp[2] = p.z() * weight;
-	
-	sum += fabs(noise(ptemp)) / weight;
-    }
-    
-    return sum;
+int Noise::hash(int i, int j, int k) {
+    return m_perm[(k + m_perm[(j + m_perm[i]) % 12]) % 12];
 }
 
-float Noise::dturbulence(const Vec3f &p, int depth, float d) const {
-    float sum = 0.0f;
-    float weight = 1.0f;
-    Vec3f ptemp(p);
-    
-    sum += fabs(noise(ptemp)) / d;
-    
-    for(int i = 1; i < depth; i++){
-	weight = weight * d;
-	
-	ptemp[0] = p.x() * weight;
-	ptemp[1] = p.y() * weight;
-	ptemp[2] = p.z() * weight;
-	
-	sum += fabs(noise(ptemp)) / d;
-    }
-    
-    return sum;
-}
+float Noise::eval(float x, float y, float z) {
+    int i = x;
+    int j = y;
+    int k = z;
+    float u = smooth(x - i);
+    float v = smooth(y - j);
+    float w = smooth(z - k);
 
-float Noise::noise(const Vec3f &p) const {
-    int fi, fj, fk;
-    float fu, fv, fw, sum;
-    Vec3f v;
+    int h0 = hash(i, j, k);
+    int h1 = hash(i, j, k + 1);
+    int h2 = hash(i, j + 1, k);
+    int h3 = hash(i, j + 1, k + 1);
+    int h4 = hash(i + 1, j, k);
+    int h5 = hash(i + 1, j, k + 1);
+    int h6 = hash(i + 1, j + 1, k);
+    int h7 = hash(i + 1, j + 1, k + 1);
+
+    float g0 = dotGrad(m_perm[h0], u, v, w);
+    float g1 = dotGrad(m_perm[h1], u, v, w - 1.0);
+    float g2 = dotGrad(m_perm[h2], u, v - 1.0, w);
+    float g3 = dotGrad(m_perm[h3], u, v - 1.0, w - 1.0);
+    float g4 = dotGrad(m_perm[h4], u - 1.0, v, w);
+    float g5 = dotGrad(m_perm[h5], u - 1.0, v, w - 1.0);
+    float g6 = dotGrad(m_perm[h6], u - 1.0, v - 1.0, w);
+    float g7 = dotGrad(m_perm[h7], u - 1.0, v - 1.0, w - 1.0);
     
-    fi = int(floor(p.x()));
-    fj = int(floor(p.y()));
-    fk = int(floor(p.z()));
-    
-    fu = p.x() - float(fi);
-    fv = p.y() - float(fj);
-    fw = p.z() - float(fk);
-    
-    sum = 0.0;
-    
-    v = Vec3f(fu, fv, fw);
-    sum += knot(fi, fj, fk, v);
-    
-    v = Vec3f(fu - 1, fv, fw);
-    sum += knot(fi + 1, fj, fk, v);
-    
-    v = Vec3f(fu, fv - 1, fw);
-    sum += knot(fi, fj + 1, fk, v);
-    
-    v = Vec3f(fu, fv, fw - 1);
-    sum += knot(fi, fj, fk + 1, v);
-    
-    v = Vec3f(fu - 1, fv - 1, fw);
-    sum += knot(fi + 1, fj + 1, fk, v);
-    
-    v = Vec3f(fu - 1, fv, fw - 1);
-    sum += knot(fi + 1, fj, fk + 1, v);
-    
-    v = Vec3f(fu, fv - 1, fw - 1);
-    sum += knot(fi, fj + 1, fk + 1, v);
-    
-    v = Vec3f(fu - 1, fv - 1, fw - 1);
-    sum += knot(fi + 1, fj + 1, fk + 1, v);
-    
-    return sum;
+    return lerp(lerp(lerp(g0, g1, w), lerp(g2, g3, w), v),
+		lerp(lerp(g4, g5, w), lerp(g6, g7, w), v), u);
 }

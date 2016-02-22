@@ -1,55 +1,47 @@
-/**
- * Adapted from Realistic Ray-Tracing. P. Shirley
- */
+/*======================================================================
+
+ Copyright (C) 2010-2015. Mario Rincon-Nigro.
+
+ This is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This software is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this software.  If not, see <http://www.gnu.org/licenses/>.
+
+======================================================================*/
 
 #pragma once
 
-#include <Vec.h>
-
 class Noise {
 public:
-    Noise();
-    
-    float noise(const Vec3f &v) const;
-    
-    float turbulence(const Vec3f &v, int depth) const;
-    
-    float dturbulence(const Vec3f &v, int depth, float d) const;
-    
-    float omega(float t) const;
-    
-    Vec3f gamma(int i, int j, int k) const;
-    
-    int int_gamma(int i, int j, int k) const;
-    
-    float knot(int i, int j, int k, Vec3f &v) const;
+    static float eval(float x, float y, float z);
 
 private:
-    Vec3f m_grad[16];
+    static float smooth(float t);
 
-    int m_phi[16];
+    static float lerp(float a, float b, float s);
+
+    static float dotGrad(int g, float u, float v, float w);
+
+    static int hash(int i, int j, int k);
+
+private:
+    static const float m_grad[][3];
+
+    static const int m_perm[12];
 };
 
-inline float Noise::omega(float t) const {
-    float t2, t3;
-    
-    t = (t > 0.0f) ? t : -t;
-    t2 = t * t;
-    t3 = t2 * t;
-    
-    return (-6.0f * t3 * t3 + 15.0f * t2 * t2 - 10.0f * t2 * t + 1.0f);
+inline float Noise::smooth(float t) {
+    return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
 }
 
-inline Vec3f Noise::gamma(int i, int j, int k) const {
-    int idx;
-    
-    idx = m_phi[abs(k) % 16];
-    idx = m_phi[abs(j + idx) % 16];
-    idx = m_phi[abs(i + idx) % 16];
-    
-    return m_grad[idx];
-}
-
-inline float Noise::knot(int i, int j, int k, Vec3f &v) const {
-    return omega(v.x()) * omega(v.y()) * omega(v.z()) * gamma(i, j, k).dot(v);
+inline float Noise::lerp(float v0, float v1, float s) {
+    return (1 - s) * v0 + s * v1;
 }

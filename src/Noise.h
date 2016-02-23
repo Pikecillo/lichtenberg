@@ -21,11 +21,13 @@
 
 class Noise {
 public:
-    static float eval(float x);
+    static float perlin(float x, float y = 0.5f, float z = 0.5f);
 
-    static float eval(float x, float y);
-
-    static float eval(float x, float y, float z);
+    static float turbulence(int octaves,
+			    float x, float y = 0.5f, float z = 0.5f);
+    
+    static float marble(int octaves, float freq,
+			float x, float y = 0.5f, float z = 0.5f);
 
 private:
     static float smooth(float t);

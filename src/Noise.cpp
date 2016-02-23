@@ -50,27 +50,18 @@ const int Noise::m_perm[] = {
     196,  81, 159, 142
 };
 
-float Noise::dotGrad(int g, float u, float v, float w) {
-    return (m_grad[g][0] * u + m_grad[g][1] * v + m_grad[g][2] * w)
-	* 0.7071067811865475;
+float Noise::dotGrad(int g, float x, float y, float z) {
+    return (m_grad[g][0] * x + m_grad[g][1] * y + m_grad[g][2] * z);
 }
 
 int Noise::hash(int i, int j, int k) {
-    return m_perm[(k + m_perm[(j + m_perm[i]) & 0xFF]) & 0xFF] & 0xF;
+    return m_perm[(k + m_perm[(j + m_perm[i & 0xFF]) & 0xFF]) & 0xFF] & 0xF;
 }
 
-float Noise::eval(float x) {
-    return eval(x, 0.0, 0.0);
-}
-
-float Noise::eval(float x, float y) {
-    return eval(x, y, 0.0);
-}
-
-float Noise::eval(float x, float y, float z) {
-    int i = x;
-    int j = y;
-    int k = z;   
+float Noise::perlin(float x, float y, float z) {
+    int i = static_cast<int>(x);
+    int j = static_cast<int>(y);
+    int k = static_cast<int>(z);   
 
     float u = smooth(x -= floor(x));
     float v = smooth(y -= floor(y));
@@ -96,4 +87,20 @@ float Noise::eval(float x, float y, float z) {
     
     return lerp(lerp(lerp(g0, g1, w), lerp(g2, g3, w), v),
 		lerp(lerp(g4, g5, w), lerp(g6, g7, w), v), u);
+}
+
+float Noise::turbulence(int octaves, float x, float y, float z) {
+    float t = 0.0;
+    float freq = 1.0;
+
+    for(int i = 1; i <= octaves; i++) {
+	t += fabs(perlin(x * freq, y * freq, z * freq) / freq);
+	freq *= 2.0;
+    }
+
+    return t;
+}
+
+float Noise::marble(int octaves, float freq, float x, float y, float z) {
+    return fabs(sin(freq * x + turbulence(octaves, x, y, z)));
 }

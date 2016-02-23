@@ -21,6 +21,10 @@
 
 class Noise {
 public:
+    static float eval(float x);
+
+    static float eval(float x, float y);
+
     static float eval(float x, float y, float z);
 
 private:
@@ -35,7 +39,7 @@ private:
 private:
     static const float m_grad[][3];
 
-    static const int m_perm[12];
+    static const int m_perm[256];
 };
 
 inline float Noise::smooth(float t) {
@@ -43,5 +47,5 @@ inline float Noise::smooth(float t) {
 }
 
 inline float Noise::lerp(float v0, float v1, float s) {
-    return (1 - s) * v0 + s * v1;
+    return v0 + s * (v1 - v0);
 }

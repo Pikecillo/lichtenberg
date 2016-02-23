@@ -18,35 +18,63 @@
 ======================================================================*/
 
 #include <math.h>
-#include <stdlib.h>
 
 #include <Noise.h>
 
 const float Noise::m_grad[][3] = {
     {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}, {1.0,-1.0, 0.0}, {-1.0,-1.0, 0.0},
     {1.0, 0.0, 1.0}, {-1.0, 0.0, 1.0}, {1.0, 0.0,-1.0}, {-1.0, 0.0,-1.0},
-    {0.0, 1.0, 1.0}, { 0.0,-1.0, 1.0}, {0.0, 1.0,-1.0}, { 0.0,-1.0,-1.0}
+    {0.0, 1.0, 1.0}, { 0.0,-1.0, 1.0}, {0.0, 1.0,-1.0}, { 0.0,-1.0,-1.0},
+    {1.0, 1.0, 0.0}, {-1.0, 1.0, 0.0}, {0.0,-1.0, 1.0}, { 0.0,-1.0,-1.0} 
 };
 
 const int Noise::m_perm[] = {
-    10, 5, 6, 7, 9, 8, 1, 0, 4, 2, 3, 11
+    135, 198,  26, 205, 110,  93, 250, 210, 138,  53,  96,  27,  78,  25,
+      1, 211,  41,  89, 233,   4, 156, 146, 253,  98, 232, 115, 155,  39,
+    157, 247,  76, 203, 238,  72, 221,  69,  21,  24,   3, 107,  32,  11,
+    178, 229,  66,  38, 102, 189, 187, 126, 220,  34, 133,  33,  23, 116,
+     37,  83,  70,  80, 131, 136, 114, 179, 183, 193, 166, 234, 213, 113,
+    245, 143,  20, 215, 218, 226,  52,  40, 153,  61, 201,  22,  13, 104,
+     77,  97, 194,  67, 109, 117, 190, 230,  15, 212, 160, 244, 204, 231,
+     51, 177,  18,   9, 181, 149,  75,   7, 106, 239, 134, 111, 125, 150,
+     99, 191, 128, 154,  64,  31, 152,  60,  82, 141, 162, 108, 242, 164,
+     56, 216, 122, 147, 185, 240, 186,  36, 151, 243,  46,  62, 123, 246,
+     42, 172,  49, 140, 145, 161, 254, 127,  50,  12, 100, 168, 175,  92,
+     43,  58,  90, 132, 124,  45,  44, 180,   6, 255, 184, 182,  28,  71,
+    241,  88, 249,  85, 118, 171,  17,  65, 148,  74,  73, 188,  14,  91,
+    223, 197,   2,  59,  30, 112, 130, 214, 202, 173, 236,  47,  16, 167,
+      0, 222,  68, 105, 195,  84, 208, 119, 207, 139,  48, 209, 120, 251,
+    248, 170,  95,  63, 227, 103, 200, 163,  87, 121, 225, 219, 137, 174,
+     54, 228,  86,  19,   8, 192, 237,  79, 129, 144, 169, 252,   5, 199,
+     57, 224, 176,  35,  29, 206,  10, 101, 217, 158,  55,  94, 235, 165,
+    196,  81, 159, 142
 };
 
 float Noise::dotGrad(int g, float u, float v, float w) {
-    return m_grad[g][0] * u + m_grad[g][1] * v + m_grad[g][2] * w;
+    return (m_grad[g][0] * u + m_grad[g][1] * v + m_grad[g][2] * w)
+	* 0.7071067811865475;
 }
 
 int Noise::hash(int i, int j, int k) {
-    return m_perm[(k + m_perm[(j + m_perm[i]) % 12]) % 12];
+    return m_perm[(k + m_perm[(j + m_perm[i]) & 0xFF]) & 0xFF] & 0xF;
+}
+
+float Noise::eval(float x) {
+    return eval(x, 0.0, 0.0);
+}
+
+float Noise::eval(float x, float y) {
+    return eval(x, y, 0.0);
 }
 
 float Noise::eval(float x, float y, float z) {
     int i = x;
     int j = y;
-    int k = z;
-    float u = smooth(x - i);
-    float v = smooth(y - j);
-    float w = smooth(z - k);
+    int k = z;   
+
+    float u = smooth(x -= floor(x));
+    float v = smooth(y -= floor(y));
+    float w = smooth(z -= floor(z));
 
     int h0 = hash(i, j, k);
     int h1 = hash(i, j, k + 1);
@@ -57,14 +85,14 @@ float Noise::eval(float x, float y, float z) {
     int h6 = hash(i + 1, j + 1, k);
     int h7 = hash(i + 1, j + 1, k + 1);
 
-    float g0 = dotGrad(m_perm[h0], u, v, w);
-    float g1 = dotGrad(m_perm[h1], u, v, w - 1.0);
-    float g2 = dotGrad(m_perm[h2], u, v - 1.0, w);
-    float g3 = dotGrad(m_perm[h3], u, v - 1.0, w - 1.0);
-    float g4 = dotGrad(m_perm[h4], u - 1.0, v, w);
-    float g5 = dotGrad(m_perm[h5], u - 1.0, v, w - 1.0);
-    float g6 = dotGrad(m_perm[h6], u - 1.0, v - 1.0, w);
-    float g7 = dotGrad(m_perm[h7], u - 1.0, v - 1.0, w - 1.0);
+    float g0 = dotGrad(h0, x, y, z);
+    float g1 = dotGrad(h1, x, y, z - 1.0);
+    float g2 = dotGrad(h2, x, y - 1.0, z);
+    float g3 = dotGrad(h3, x, y - 1.0, z - 1.0);
+    float g4 = dotGrad(h4, x - 1.0, y, z);
+    float g5 = dotGrad(h5, x - 1.0, y, z - 1.0);
+    float g6 = dotGrad(h6, x - 1.0, y - 1.0, z);
+    float g7 = dotGrad(h7, x - 1.0, y - 1.0, z - 1.0);
     
     return lerp(lerp(lerp(g0, g1, w), lerp(g2, g3, w), v),
 		lerp(lerp(g4, g5, w), lerp(g6, g7, w), v), u);

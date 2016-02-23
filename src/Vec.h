@@ -70,6 +70,8 @@ public:
     
     float max() const;
 
+    Vec3f clamp(float lo, float hi) const;
+
 private:
     float m_x, m_y, m_z;
 };
@@ -173,4 +175,10 @@ inline float Vec3f::min() const {
 
 inline float Vec3f::max() const {
     return std::max(m_x, std::max(m_y, m_z));
+}
+
+inline Vec3f Vec3f::clamp(float lo, float hi) const {
+    return Vec3f(std::min(hi, std::max(lo, m_x)),
+		 std::min(hi, std::max(lo, m_y)),
+		 std::min(hi, std::max(lo, m_z)));
 }

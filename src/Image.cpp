@@ -59,30 +59,17 @@ void Image::set(int x, int y, const Vec3f &color){
 }
 
 void Image::write_ppm(std::ostream &out){
-    // Header
-    out << "P6\n";
+    // Raw PPM format header
+    out << "P6\n"; // Magic number
     out << m_width << " " << m_height << "\n";
-    out << "255\n";
-
-    unsigned int ired, igreen, iblue;
-    unsigned char red, green, blue;
+    out << "255\n"; // Maximum color value
     
-    // Clamp values to [0, 255]
+    // Write pixels in row-major order from top to bottom
     for(int i = 0; i < m_pixels.size(); i++) {
-	ired = (unsigned int)(256 * m_pixels[i][0]);
-	igreen = (unsigned int)(256 * m_pixels[i][1]);
-	iblue = (unsigned int)(256 * m_pixels[i][2]);
-	
-	if(ired > 255) ired = 255;
-	if(igreen > 255) igreen = 255;
-	if(iblue > 255) iblue = 255;
-	    
-	red = (unsigned char)ired;
-	green = (unsigned char)igreen;
-	blue = (unsigned char)iblue;
-	    
-	out.put(red);
-	out.put(green);
-	out.put(blue);
+	Vec3f pixel = m_pixels[i].clamp(0.0f, 1.0f);
+
+	out.put(static_cast<unsigned char>(255 * pixel[0]));
+	out.put(static_cast<unsigned char>(255 * pixel[1]));
+	out.put(static_cast<unsigned char>(255 * pixel[2]));
     }
 }

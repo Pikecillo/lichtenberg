@@ -158,15 +158,15 @@ inline Vec3f Vec3f::cross(const Vec3f &other) const {
 }
 
 inline Vec3f Vec3f::max(const Vec3f &other) const {
-    return Vec3f(m_x < other.m_x ? other.m_x : m_x,
-		 m_y < other.m_y ? other.m_y : m_y,
-		 m_z < other.m_z ? other.m_z : m_z);
+    return Vec3f(std::max(m_x, other.m_x),
+		 std::max(m_y, other.m_y),
+		 std::max(m_z, other.m_z));
 }
 
 inline Vec3f Vec3f::min(const Vec3f &other) const {
-    return Vec3f(m_x >= other.m_x ? other.m_x : m_x,
-		 m_y >= other.m_y ? other.m_y : m_y,
-		 m_z >= other.m_z ? other.m_z : m_z);
+    return Vec3f(std::min(m_x, other.m_x),
+		 std::min(m_y, other.m_y),
+		 std::min(m_z, other.m_z));
 }
 
 inline float Vec3f::min() const {

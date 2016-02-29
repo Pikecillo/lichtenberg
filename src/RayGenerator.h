@@ -1,17 +1,10 @@
-
 #pragma once
 
 #include <vector>
 
 #include <Camera.h>
+#include <Types.h>
 #include <Vec.h>
-
-struct Ray {
-    Vec3f m_origin;
-    Vec3f m_direction;
-};
-
-typedef std::vector<Ray> RayBuffer;
 
 class RayGenerator {
 

@@ -18,6 +18,7 @@
 ======================================================================*/
 
 #include <math.h>
+#include <stdlib.h>
 
 #include <Noise.h>
 
@@ -50,18 +51,33 @@ const int Noise::m_perm[] = {
     196,  81, 159, 142
 };
 
-float Noise::dotGrad(int g, float x, float y, float z) {
-    return (m_grad[g][0] * x + m_grad[g][1] * y + m_grad[g][2] * z);
+float Noise::dotGrad(int h, float x, float y, float z) {
+    return (m_grad[h][0] * x + m_grad[h][1] * y + m_grad[h][2] * z);
 }
 
 int Noise::hash(int i, int j, int k) {
-    return m_perm[(k + m_perm[(j + m_perm[i & 0xFF]) & 0xFF]) & 0xFF] & 0xF;
+    // TODO: Simplify this. We just need a way of handling modulo
+    // with negative integers so that the cycles are consistent with
+    // the positive numbers.
+    i = i < 0 ? ((i - 1) & 0xFF + 256) & 0xFF : i & 0xFF;
+    j = j < 0 ? ((j - 1) & 0xFF + 256) & 0xFF : j & 0xFF;
+    k = k < 0 ? ((k - 1) & 0xFF + 256) & 0xFF : k & 0xFF;
+
+    return m_perm[(k + m_perm[(j + m_perm[i]) & 0xFF]) & 0xFF] & 0xF;
 }
 
+/**
+ * Improved Perlin noise.
+ *
+ * @param x x-coordinate
+ * @param y y-coordinate
+ * @param z z-coordinate
+ * @return A pseudo-random real number in the range [-1.0, 0.0]
+ */
 float Noise::perlin(float x, float y, float z) {
-    int i = static_cast<int>(x);
-    int j = static_cast<int>(y);
-    int k = static_cast<int>(z);   
+    int i = static_cast<int>(floor(x));
+    int j = static_cast<int>(floor(y));
+    int k = static_cast<int>(floor(z));   
 
     float u = smooth(x -= floor(x));
     float v = smooth(y -= floor(y));

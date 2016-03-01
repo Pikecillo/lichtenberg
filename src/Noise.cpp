@@ -51,11 +51,11 @@ const int Noise::m_perm[] = {
     196,  81, 159, 142
 };
 
-float Noise::dotGrad(int h, float x, float y, float z) {
+float Noise::dotGrad(int h, float x, float y, float z) const {
     return (m_grad[h][0] * x + m_grad[h][1] * y + m_grad[h][2] * z);
 }
 
-int Noise::hash(int i, int j, int k) {
+int Noise::hash(int i, int j, int k) const {
     // TODO: Simplify this. We just need a way of handling modulo
     // with negative integers so that the cycles are consistent with
     // the positive numbers.
@@ -69,12 +69,17 @@ int Noise::hash(int i, int j, int k) {
 /**
  * Improved Perlin noise.
  *
- * @param x x-coordinate
- * @param y y-coordinate
- * @param z z-coordinate
- * @return A pseudo-random real number in the range [-1.0, 0.0]
+ * @param freq Frequency.
+ * @param x x-coordinate.
+ * @param y y-coordinate.
+ * @param z z-coordinate.
+ * @return A pseudo-random real number in the range [-1.0, 0.0].
  */
-float Noise::perlin(float x, float y, float z) {
+float Noise::perlin(float x, float y, float z) const {
+    x *= m_scale;
+    y *= m_scale;
+    z *= m_scale;
+
     int i = static_cast<int>(floor(x));
     int j = static_cast<int>(floor(y));
     int k = static_cast<int>(floor(z));   
@@ -105,18 +110,18 @@ float Noise::perlin(float x, float y, float z) {
 		lerp(lerp(g4, g5, w), lerp(g6, g7, w), v), u);
 }
 
-float Noise::turbulence(int octaves, float x, float y, float z) {
+float Noise::turbulence(int octaves, float x, float y, float z) const {
     float t = 0.0;
     float freq = 1.0;
 
     for(int i = 1; i <= octaves; i++) {
-	t += fabs(perlin(x * freq, y * freq, z * freq) / freq);
+	t += fabs(perlin(x, y, z) / freq);
 	freq *= 2.0;
     }
 
     return t;
 }
 
-float Noise::marble(int octaves, float freq, float x, float y, float z) {
+float Noise::marble(int octaves, float freq, float x, float y, float z) const {
     return fabs(sin(freq * x + turbulence(octaves, x, y, z)));
 }

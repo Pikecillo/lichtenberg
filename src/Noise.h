@@ -21,33 +21,49 @@
 
 class Noise {
 public:
-    static float perlin(float x, float y = 0.5f, float z = 0.5f);
+    Noise();
 
-    static float turbulence(int octaves,
-			    float x, float y = 0.5f, float z = 0.5f);
+    Noise(float scale);
     
-    static float marble(int octaves, float freq,
-			float x, float y = 0.5f, float z = 0.5f);
+    void set_scale(float scale);
+
+    float perlin(float x, float y = 0.5f, float z = 0.5f) const;
+    
+    float turbulence(int octaves, float x, float y = 0.5f,
+		     float z = 0.5f) const;
+    
+    float marble(int octaves, float freq,
+		 float x, float y = 0.5f, float z = 0.5f) const;
+    
+private:
+    float smooth(float t) const;
+
+    float lerp(float a, float b, float s) const;
+
+    float dotGrad(int g, float u, float v, float w) const;
+
+    int hash(int i, int j, int k) const;
 
 private:
-    static float smooth(float t);
+    float m_scale;
 
-    static float lerp(float a, float b, float s);
-
-    static float dotGrad(int g, float u, float v, float w);
-
-    static int hash(int i, int j, int k);
-
-private:
     static const float m_grad[][3];
 
     static const int m_perm[256];
 };
 
-inline float Noise::smooth(float t) {
+inline Noise::Noise() : m_scale(1.0f) {}
+
+inline Noise::Noise(float scale) : m_scale(scale) {}
+
+inline void Noise::set_scale(float scale) {
+    m_scale = scale;
+}
+
+inline float Noise::smooth(float t) const {
     return t * t * t * (t * (t * 6.0f - 15.0f) + 10.0f);
 }
 
-inline float Noise::lerp(float v0, float v1, float s) {
+inline float Noise::lerp(float v0, float v1, float s) const {
     return v0 + s * (v1 - v0);
 }
